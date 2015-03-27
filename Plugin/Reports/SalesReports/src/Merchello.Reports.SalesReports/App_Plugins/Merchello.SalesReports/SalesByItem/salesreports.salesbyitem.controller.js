@@ -53,11 +53,13 @@ angular.module('merchello.salesreports').controller('Merchello.Plugins.SalesRepo
                     $scope.filterStartDate = startDate;
                     $scope.filterEndDate = endDate;
                 }
+
+                $scope.filterStartDate = startDate;
+                $scope.filterEndDate = endDate;
                 query.addInvoiceDateParam($scope.filterStartDate, 'start');
                 query.addInvoiceDateParam($scope.filterEndDate, 'end');
             }
 
-            $scope.filterStartDate = startDate;
             query.currentPage = 0;
             query.itemsPerPage = 25;
             query.sortBy = 'invoiceDate';

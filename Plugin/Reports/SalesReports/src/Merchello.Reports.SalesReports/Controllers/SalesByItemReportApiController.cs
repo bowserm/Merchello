@@ -1,4 +1,6 @@
-﻿namespace Merchello.Reports.SalesReports.Controllers
+﻿using Umbraco.Core.Logging;
+
+namespace Merchello.Reports.SalesReports.Controllers
 {
     using System;
     using System.Collections.Generic;
@@ -80,7 +82,7 @@
 
             DateTime startDate;
             DateTime endDate;
-            if (invoiceDateStart  == null) throw new NullReferenceException("invoiceDateStart is a required parameter");
+            if (invoiceDateStart == null) throw new NullReferenceException("invoiceDateStart is a required parameter");
             if (!DateTime.TryParse(invoiceDateStart.Value, out startDate)) throw new InvalidCastException("Failed to convert invoiceDateStart to a valid DateTime");
 
             endDate = invoiceDateEnd == null
@@ -104,7 +106,7 @@
 
             // Use a visitor to build the collection of report data
             var vistor = new SalesByItemVisitor(_merchello);
-           
+
             foreach (var invoice in invoices.Items)
             {
                 ((InvoiceDisplay)invoice).Accept(vistor);
@@ -183,7 +185,17 @@
                             SortBy = "invoiceDate"
                         };
 
-            return SearchByDateRange(query);
+            try
+            {
+                var results = SearchByDateRange(query);
+                return results;
+            }
+            catch (Exception ex)
+            {
+                LogHelper.Error<SalesByItemReportApiController>("The system was unable to determine the default report data for the SalesByItem report", ex);
+            }
+
+            return new QueryResultDisplay();
         }
     }
 }
