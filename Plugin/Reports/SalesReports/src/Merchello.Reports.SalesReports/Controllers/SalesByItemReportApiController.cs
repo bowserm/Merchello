@@ -1,16 +1,11 @@
-﻿using Umbraco.Core.Logging;
+﻿using System.Globalization;
 
 namespace Merchello.Reports.SalesReports.Controllers
 {
     using System;
     using System.Collections.Generic;
-    using System.Globalization;
-    using System.IO;
     using System.Linq;
     using System.Web.Http;
-
-    using ICSharpCode.SharpZipLib.Zip;
-
     using Merchello.Core;
     using Merchello.Reports.SalesReports.Visitors;
     using Merchello.Web;
@@ -18,9 +13,9 @@ namespace Merchello.Reports.SalesReports.Controllers
     using Merchello.Web.Models.Querying;
     using Merchello.Web.Reporting;
     using Merchello.Web.Trees;
-
-    using Umbraco.Core.IO;
     using Umbraco.Web.Mvc;
+    using Merchello.Core.Services;
+    using Umbraco.Core.Logging;
 
     /// <summary>
     /// The sales by item report API controller.
@@ -29,6 +24,11 @@ namespace Merchello.Reports.SalesReports.Controllers
     [PluginController("MerchelloSalesReports")]
     public class SalesByItemReportApiController : ReportController
     {
+        /// <summary>
+        /// The store setting service.
+        /// </summary>
+        private readonly StoreSettingService _storeSettingService;
+
         /// <summary>
         /// The <see cref="MerchelloHelper"/>.
         /// </summary>
@@ -51,6 +51,7 @@ namespace Merchello.Reports.SalesReports.Controllers
         public SalesByItemReportApiController(IMerchelloContext merchelloContext)
             : base(merchelloContext)
         {
+            _storeSettingService = MerchelloContext.Services.StoreSettingService as StoreSettingService;
             _merchello = new MerchelloHelper(merchelloContext.Services);
         }
 
@@ -83,11 +84,21 @@ namespace Merchello.Reports.SalesReports.Controllers
             DateTime startDate;
             DateTime endDate;
             if (invoiceDateStart == null) throw new NullReferenceException("invoiceDateStart is a required parameter");
-            if (!DateTime.TryParse(invoiceDateStart.Value, out startDate)) throw new InvalidCastException("Failed to convert invoiceDateStart to a valid DateTime");
 
-            endDate = invoiceDateEnd == null
+            var settings = _storeSettingService.GetAll().ToList();
+            var dateFormat = settings.FirstOrDefault(s => s.Name == "dateFormat");
+            if (dateFormat == null)
+            {
+                if (!DateTime.TryParse(invoiceDateStart.Value, out startDate)) throw new InvalidCastException("Failed to convert invoiceDateStart to a valid DateTime");
+            }
+            else if (!DateTime.TryParseExact(invoiceDateStart.Value, dateFormat.Value, CultureInfo.InvariantCulture, DateTimeStyles.None, out startDate))
+            {
+                throw new InvalidCastException("Failed to convert invoiceDateStart to a valid DateTime");
+            }
+
+            endDate = invoiceDateEnd == null || dateFormat == null
                 ? DateTime.MaxValue
-                : DateTime.TryParse(invoiceDateEnd.Value, out endDate)
+                : DateTime.TryParseExact(invoiceDateEnd.Value, dateFormat.Value, CultureInfo.InvariantCulture, DateTimeStyles.None, out endDate)
                     ? endDate
                     : DateTime.MaxValue;
 
@@ -165,6 +176,9 @@ namespace Merchello.Reports.SalesReports.Controllers
         [HttpGet]
         public override QueryResultDisplay GetDefaultReportData()
         {
+            var settings = _storeSettingService.GetAll().ToList();
+            var dateFormat = settings.FirstOrDefault(s => s.Name == "dateFormat");
+
             var query = new QueryDisplay()
                         {
                             CurrentPage = 0,
@@ -174,12 +188,12 @@ namespace Merchello.Reports.SalesReports.Controllers
                                 new QueryDisplayParameter()
                                     {
                                     FieldName = "invoiceDateStart",
-                                    Value = DateTime.Now.AddMonths(-1).ToShortDateString()
+                                    Value = dateFormat != null ? DateTime.Now.AddMonths(-1).ToString(dateFormat.Value) : DateTime.Now.AddMonths(-1).ToShortDateString()
                                     },
                                 new QueryDisplayParameter()
                                     {
                                         FieldName = "invoiceDateEnd",
-                                        Value = DateTime.Now.ToShortDateString()
+                                        Value = dateFormat != null ? DateTime.Now.ToString(dateFormat.Value) : DateTime.Now.ToShortDateString()
                                     }
                             },
                             SortBy = "invoiceDate"
