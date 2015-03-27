@@ -1,18 +1,12 @@
 ﻿using System;
-using System.IO;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Security.Cryptography;
 using System.Text;
-using System.Web;
 using System.Web.Http;
-using System.Xml.Linq;
 using Merchello.Core.Models;
-using Microsoft.Web.Infrastructure;
-using Umbraco.Core.IO;
-using Umbraco.Web.Mvc;
 
 namespace Merchello.Plugin.Reports.ExportOrders
 {
@@ -22,7 +16,6 @@ namespace Merchello.Plugin.Reports.ExportOrders
     using Merchello.Web.Models.Querying;
     using Merchello.Web.Trees;
     using Merchello.Web.Reporting;
-    using Merchello.Web.WebApi;
     using Merchello.Core.Services;
     using Merchello.Web;
     
@@ -37,6 +30,11 @@ namespace Merchello.Plugin.Reports.ExportOrders
         /// The <see cref="IInvoiceService"/>.
         /// </summary>
         private readonly IInvoiceService _invoiceService;
+
+        /// <summary>
+        /// The store setting service.
+        /// </summary>
+        private readonly StoreSettingService _storeSettingService;
 
         /// <summary>
         /// The <see cref="MerchelloHelper"/>
@@ -61,6 +59,7 @@ namespace Merchello.Plugin.Reports.ExportOrders
             : base(merchelloContext)
         {
             _invoiceService = merchelloContext.Services.InvoiceService;
+            _storeSettingService = MerchelloContext.Services.StoreSettingService as StoreSettingService;
             
             _merchello = new MerchelloHelper(merchelloContext.Services);
         }
@@ -128,15 +127,26 @@ namespace Merchello.Plugin.Reports.ExportOrders
                 result = Request.CreateErrorResponse(HttpStatusCode.BadRequest, "invoiceDateStart is a required parameter");
                 return result;
             }
-            if (!DateTime.TryParse(invoiceDateStart.Value, out dtStart))
+
+            var settings = _storeSettingService.GetAll().ToList();
+            var dateFormat = settings.FirstOrDefault(s => s.Name == "dateFormat");
+            if (dateFormat == null)
+            {
+                if (!DateTime.TryParse(invoiceDateStart.Value, out dtStart))
+                {
+                    result = Request.CreateErrorResponse(HttpStatusCode.BadRequest, "Failed to convert invoiceDateStart to a valid DateTime");
+                    return result;
+                }
+            }
+            else if (!DateTime.TryParseExact(invoiceDateStart.Value, dateFormat.Value, CultureInfo.InvariantCulture, DateTimeStyles.None, out dtStart))
             {
                 result = Request.CreateErrorResponse(HttpStatusCode.BadRequest, "Failed to convert invoiceDateStart to a valid DateTime");
                 return result;
             }
-
-            dtEnd = invoiceDateEnd == null
+            
+            dtEnd = invoiceDateEnd == null || dateFormat == null
                 ? DateTime.MaxValue
-                : DateTime.TryParse(invoiceDateEnd.Value, out dtEnd)
+                : DateTime.TryParseExact(invoiceDateEnd.Value, dateFormat.Value, CultureInfo.InvariantCulture, DateTimeStyles.None, out dtEnd)
                     ? dtEnd
                     : DateTime.MaxValue;
 
