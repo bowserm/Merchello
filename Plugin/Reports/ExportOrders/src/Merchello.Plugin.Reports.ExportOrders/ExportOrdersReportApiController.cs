@@ -1,9 +1,13 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
 using System.Web;
+using System.Web.Http;
 using System.Xml.Linq;
 using Merchello.Core.Models;
 using Microsoft.Web.Infrastructure;
@@ -109,12 +113,34 @@ namespace Merchello.Plugin.Reports.ExportOrders
         /// <returns>
         /// The <see cref="QueryResultDisplay"/>.
         /// </returns>
-        public QueryResultDisplay GetOrderReportData()
+        [HttpPost]
+        public HttpResponseMessage GetOrderReportData(QueryDisplay query)
         {
-            var dtStart = new DateTime(2014,1,1);
-            var dtEnd = new DateTime(2014,12,31);
+            HttpResponseMessage result = null;
+
+            var invoiceDateStart = query.Parameters.FirstOrDefault(x => x.FieldName == "invoiceDateStart");
+            var invoiceDateEnd = query.Parameters.FirstOrDefault(x => x.FieldName == "invoiceDateEnd");
+
+            DateTime dtStart;
+            DateTime dtEnd;
+            if (invoiceDateStart == null)
+            {
+                result = Request.CreateErrorResponse(HttpStatusCode.BadRequest, "invoiceDateStart is a required parameter");
+                return result;
+            }
+            if (!DateTime.TryParse(invoiceDateStart.Value, out dtStart))
+            {
+                result = Request.CreateErrorResponse(HttpStatusCode.BadRequest, "Failed to convert invoiceDateStart to a valid DateTime");
+                return result;
+            }
+
+            dtEnd = invoiceDateEnd == null
+                ? DateTime.MaxValue
+                : DateTime.TryParse(invoiceDateEnd.Value, out dtEnd)
+                    ? dtEnd
+                    : DateTime.MaxValue;
+
             var invoices = _invoiceService.GetInvoicesByDateRange(dtStart,dtEnd).ToArray();
-            var queryResultDisplay = new QueryResultDisplay();
 
             try
             {
@@ -177,18 +203,21 @@ namespace Merchello.Plugin.Reports.ExportOrders
                     }
                 }
 
-                string path = HttpContext.Current.Server.MapPath("/orders.csv");
-
-                csvExport.ExportToFile(path);
-
-                queryResultDisplay = new QueryResultDisplay { Items = invoices, TotalItems = invoices.Count() };
+                result = Request.CreateResponse(HttpStatusCode.OK);
+                result.Content = new StreamContent(csvExport.ExportToStream());
+                result.Content.Headers.ContentType = new MediaTypeHeaderValue("text/csv");
+                result.Content.Headers.ContentDisposition = new ContentDispositionHeaderValue("attachment")
+                {
+                    FileName = "Orders.csv"
+                };
             }
-            catch (SystemException e)
+            catch (SystemException ex)
             {
-                string ex = e.Message;
+                result = Request.CreateErrorResponse(HttpStatusCode.InternalServerError, ex);
+                return result;
             }
 
-            return queryResultDisplay;
+            return result;
         }
     }
 }

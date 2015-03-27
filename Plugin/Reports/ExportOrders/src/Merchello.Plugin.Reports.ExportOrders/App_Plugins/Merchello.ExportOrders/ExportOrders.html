@@ -28,11 +28,26 @@
 <merchello-panel>
 
     <div class="merchello-pane row-fluid">
+        
+        <div class="well row-fluid col-xs-10 span10">
+            <p>Show orders made between</p>
 
-        <div>
-            Export Status:
-            <div class="well">
-                <a ng-href="/orders.csv" download="orders.csv" data-ng-click="finishDownload()" class="download_file">{{exportStatus}}</a>
+            <filter-by-date-range filter-start-date="filterStartDate" filter-end-date="filterEndDate" filter-with-dates="filterWithDates(filterStartDate, filterEndDate)"></filter-by-date-range>
+
+        </div>
+
+        <div class="well row-fluid col-xs-10 span10">
+            <!-- Loader -->
+            <!--<div class="pager" data-ng-show="!preValuesLoaded">
+                <img src="/umbraco/assets/img/loader.gif" />
+            </div>-->
+            
+            <!--Export Status:
+                <div class="well">
+                    <a ng-href="/orders.csv" download="orders.csv" data-ng-click="finishDownload()" class="download_file">{{exportStatus}}</a>
+                </div>-->
+            <div style="display:none;">
+                <a nr-href="{{download}}"></a>
             </div>
         </div>
     </div>
