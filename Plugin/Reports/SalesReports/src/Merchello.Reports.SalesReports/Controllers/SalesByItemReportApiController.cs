@@ -180,24 +180,24 @@ namespace Merchello.Reports.SalesReports.Controllers
             var dateFormat = settings.FirstOrDefault(s => s.Name == "dateFormat");
 
             var query = new QueryDisplay()
+            {
+                CurrentPage = 0,
+                ItemsPerPage = int.MaxValue,
+                Parameters = new List<QueryDisplayParameter>()
+                {
+                    new QueryDisplayParameter()
                         {
-                            CurrentPage = 0,
-                            ItemsPerPage = int.MaxValue,
-                            Parameters = new List<QueryDisplayParameter>()
-                            {
-                                new QueryDisplayParameter()
-                                    {
-                                    FieldName = "invoiceDateStart",
-                                    Value = dateFormat != null ? DateTime.Now.AddMonths(-1).ToString(dateFormat.Value) : DateTime.Now.AddMonths(-1).ToShortDateString()
-                                    },
-                                new QueryDisplayParameter()
-                                    {
-                                        FieldName = "invoiceDateEnd",
-                                        Value = dateFormat != null ? DateTime.Now.ToString(dateFormat.Value) : DateTime.Now.ToShortDateString()
-                                    }
-                            },
-                            SortBy = "invoiceDate"
-                        };
+                        FieldName = "invoiceDateStart",
+                        Value = dateFormat != null ? DateTime.Now.AddMonths(-1).ToString(dateFormat.Value) : DateTime.Now.AddMonths(-1).ToShortDateString()
+                        },
+                    new QueryDisplayParameter()
+                        {
+                            FieldName = "invoiceDateEnd",
+                            Value = dateFormat != null ? DateTime.Now.ToString(dateFormat.Value) : DateTime.Now.ToShortDateString()
+                        }
+                },
+                SortBy = "invoiceDate"
+            };
 
             try
             {
