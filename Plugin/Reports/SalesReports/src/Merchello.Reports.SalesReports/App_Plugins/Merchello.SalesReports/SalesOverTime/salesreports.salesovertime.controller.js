@@ -45,18 +45,12 @@ angular.module('merchello.salesreports').controller('Merchello.Plugins.SalesRepo
             if (startDate === undefined && endDate === undefined) {
                 $scope.currentFilters = [];
             } else {
-                if (Date.parse(startDate) > Date.parse(endDate)) {
-                    var temp = startDate;
-                    startDate = endDate;
-                    endDate = temp;
-                    $scope.filterStartDate = startDate;
-                    $scope.filterEndDate = endDate;
-                }
+                $scope.filterStartDate = startDate;
+                $scope.filterEndDate = endDate;
                 query.addInvoiceDateParam($scope.filterStartDate, 'start');
                 query.addInvoiceDateParam($scope.filterEndDate, 'end');
             }
 
-            $scope.filterStartDate = startDate;
             query.currentPage = 0;
             query.itemsPerPage = 25;
             query.sortBy = 'invoiceDate';
@@ -109,9 +103,7 @@ angular.module('merchello.salesreports').controller('Merchello.Plugins.SalesRepo
          * Loads a sales over time report with default data
          */
         function defaultData() {
-            $scope.loaded = false;
-            var listQuery = buildQueryDates($scope.filterStartDate, $scope.filterEndDate);
-            renderReport(salesOverTimeResource.searchByDateRange(listQuery));
+            renderReport(salesOverTimeResource.getDefaultData());
         }
 
         /**

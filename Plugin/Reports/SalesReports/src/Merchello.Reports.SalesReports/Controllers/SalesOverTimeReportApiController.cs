@@ -2,23 +2,18 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Globalization;
-    using System.IO;
     using System.Linq;
     using System.Web.Http;
-
-    using ICSharpCode.SharpZipLib.Zip;
-
     using Merchello.Core;
-    using Merchello.Reports.SalesReports.Visitors;
     using Merchello.Web;
     using Merchello.Web.Models.ContentEditing;
     using Merchello.Web.Models.Querying;
     using Merchello.Web.Reporting;
     using Merchello.Web.Trees;
-
-    using Umbraco.Core.IO;
+    using Merchello.Core.Services;
+    using Umbraco.Core.Logging;
     using Umbraco.Web.Mvc;
+    using System.Globalization;
 
     /// <summary>
     /// The sales over time report controller.
@@ -27,6 +22,11 @@
     [PluginController("MerchelloSalesReports")]
     public class SalesOverTimeReportApiController : ReportController
     {
+        /// <summary>
+        /// The store setting service.
+        /// </summary>
+        private readonly StoreSettingService _storeSettingService;
+
         /// <summary>
         /// The <see cref="MerchelloHelper"/>.
         /// </summary>
@@ -50,6 +50,7 @@
         public SalesOverTimeReportApiController(IMerchelloContext merchelloContext)
             : base(merchelloContext)
         {
+            _storeSettingService = MerchelloContext.Services.StoreSettingService as StoreSettingService;
             _merchello = new MerchelloHelper(merchelloContext.Services);
         }
 
@@ -82,11 +83,21 @@
             DateTime startDate;
             DateTime endDate;
             if (invoiceDateStart == null) throw new NullReferenceException("SalesOverTimeReportApiController::SearchByDateRange: invoiceDateStart is a required parameter");
-            if (!DateTime.TryParse(invoiceDateStart.Value, out startDate)) throw new InvalidCastException("SalesOverTimeReportApiController::SearchByDateRange: Failed to convert invoiceDateStart to a valid DateTime");
 
-            endDate = invoiceDateEnd == null
+            var settings = _storeSettingService.GetAll().ToList();
+            var dateFormat = settings.FirstOrDefault(s => s.Name == "dateFormat");
+            if (dateFormat == null)
+            {
+                if (!DateTime.TryParse(invoiceDateStart.Value, out startDate)) throw new InvalidCastException("SalesOverTimeReportApiController::SearchByDateRange: Failed to convert invoiceDateStart to a valid DateTime");
+            }
+            else if (!DateTime.TryParseExact(invoiceDateStart.Value, dateFormat.Value, CultureInfo.InvariantCulture, DateTimeStyles.None, out startDate))
+            {
+                throw new InvalidCastException("SalesOverTimeReportApiController::SearchByDateRange: Failed to convert invoiceDateStart to a valid DateTime");
+            }
+
+            endDate = invoiceDateEnd == null || dateFormat == null
                 ? DateTime.MaxValue
-                : DateTime.TryParse(invoiceDateEnd.Value, out endDate)
+                : DateTime.TryParseExact(invoiceDateEnd.Value, dateFormat.Value, CultureInfo.InvariantCulture, DateTimeStyles.None, out endDate)
                     ? endDate
                     : DateTime.MaxValue;
 
@@ -138,27 +149,40 @@
         [HttpGet]
         public override QueryResultDisplay GetDefaultReportData()
         {
-            var query = new QueryDisplay()
-                        {
-                            CurrentPage = 0,
-                            ItemsPerPage = int.MaxValue,
-                            Parameters = new List<QueryDisplayParameter>()
-                            {
-                                new QueryDisplayParameter()
-                                    {
-                                    FieldName = "invoiceDateStart",
-                                    Value = DateTime.Now.AddMonths(-10).ToShortDateString()
-                                    },
-                                new QueryDisplayParameter()
-                                    {
-                                        FieldName = "invoiceDateEnd",
-                                        Value = DateTime.Now.AddMonths(10).ToShortDateString()
-                                    }
-                            },
-                            SortBy = "invoiceDate"
-                        };
+            var settings = _storeSettingService.GetAll().ToList();
+            var dateFormat = settings.FirstOrDefault(s => s.Name == "dateFormat");
 
-            return SearchByDateRange(query);
+            var query = new QueryDisplay()
+            {
+                CurrentPage = 0,
+                ItemsPerPage = int.MaxValue,
+                Parameters = new List<QueryDisplayParameter>()
+                {
+                    new QueryDisplayParameter()
+                        {
+                        FieldName = "invoiceDateStart",
+                        Value = dateFormat != null ? DateTime.Now.AddMonths(-1).ToString(dateFormat.Value) : DateTime.Now.AddMonths(-1).ToShortDateString()
+                        },
+                    new QueryDisplayParameter()
+                        {
+                            FieldName = "invoiceDateEnd",
+                            Value = dateFormat != null ? DateTime.Now.ToString(dateFormat.Value) : DateTime.Now.ToShortDateString()
+                        }
+                },
+                SortBy = "invoiceDate"
+            };
+
+            try
+            {
+                var results = SearchByDateRange(query);
+                return results;
+            }
+            catch (Exception ex)
+            {
+                LogHelper.Error<SalesByItemReportApiController>("The system was unable to determine the default report data for the SalesOverTime report", ex);
+            }
+
+            return new QueryResultDisplay();
         }
     }
 }

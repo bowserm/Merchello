@@ -1,11 +1,10 @@
-﻿using System.Globalization;
-
-namespace Merchello.Reports.SalesReports.Controllers
+﻿namespace Merchello.Reports.SalesReports.Controllers
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Web.Http;
+    using System.Globalization;
     using Merchello.Core;
     using Merchello.Reports.SalesReports.Visitors;
     using Merchello.Web;

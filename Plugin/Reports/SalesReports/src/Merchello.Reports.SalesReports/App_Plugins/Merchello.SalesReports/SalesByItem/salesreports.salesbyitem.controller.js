@@ -46,14 +46,6 @@ angular.module('merchello.salesreports').controller('Merchello.Plugins.SalesRepo
             if (startDate === undefined && endDate === undefined) {
                 $scope.currentFilters = [];
             } else {
-                if (Date.parse(startDate) > Date.parse(endDate)) {
-                    var temp = startDate;
-                    startDate = endDate;
-                    endDate = temp;
-                    $scope.filterStartDate = startDate;
-                    $scope.filterEndDate = endDate;
-                }
-
                 $scope.filterStartDate = startDate;
                 $scope.filterEndDate = endDate;
                 query.addInvoiceDateParam($scope.filterStartDate, 'start');
