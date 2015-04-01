@@ -147,7 +147,7 @@ namespace Merchello.Plugin.Reports.ExportOrders
             dtEnd = invoiceDateEnd == null || dateFormat == null
                 ? DateTime.MaxValue
                 : DateTime.TryParseExact(invoiceDateEnd.Value, dateFormat.Value, CultureInfo.InvariantCulture, DateTimeStyles.None, out dtEnd)
-                    ? dtEnd
+                    ? dtEnd.AddDays(1) // through end of day
                     : DateTime.MaxValue;
 
             var invoices = _invoiceService.GetInvoicesByDateRange(dtStart,dtEnd).ToArray();

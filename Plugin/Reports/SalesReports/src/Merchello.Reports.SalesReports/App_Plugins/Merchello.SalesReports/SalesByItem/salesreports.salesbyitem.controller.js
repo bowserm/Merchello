@@ -1,7 +1,7 @@
 angular.module('merchello.salesreports').controller('Merchello.Plugins.SalesReports.SalesByItemController',
-    ['$scope', '$element', 'angularHelper', 'notificationsService', 'assetsService', 'queryDisplayBuilder', 'queryResultDisplayBuilder',
+    ['$scope', '$element', 'angularHelper', 'notificationsService', 'queryDisplayBuilder', 'queryResultDisplayBuilder',
         'saleByItemResultBuilder', 'salesByItemResource',
-    function ($scope, $element, angularHelper, notificationsService, assetsService, queryDisplayBuilder, queryResultDisplayBuilder, saleByItemResultBuilder,
+    function ($scope, $element, angularHelper, notificationsService, queryDisplayBuilder, queryResultDisplayBuilder, saleByItemResultBuilder,
               salesByItemResource) {
 
         $scope.loaded = false;
@@ -27,9 +27,7 @@ angular.module('merchello.salesreports').controller('Merchello.Plugins.SalesRepo
         function init() {
             setDefaultDates(new Date());
             defaultData();
-            $scope.loaded = true;
         }
-
 
         /**
          * @ngdoc method

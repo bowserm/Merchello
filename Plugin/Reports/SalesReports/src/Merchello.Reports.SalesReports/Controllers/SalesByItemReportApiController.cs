@@ -103,7 +103,7 @@
 
             var invoices = _merchello.Query.Invoice.Search(
                 startDate,
-                endDate,
+                endDate.AddDays(1), // through end of day
                 1,
                 long.MaxValue,
                 query.SortBy,

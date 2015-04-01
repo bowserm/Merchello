@@ -1,4 +1,6 @@
-﻿namespace Merchello.Reports.SalesReports.Controllers
+﻿using Merchello.Reports.SalesReports.Models;
+
+namespace Merchello.Reports.SalesReports.Controllers
 {
     using System;
     using System.Collections.Generic;
@@ -103,7 +105,7 @@
 
             var invoices = _merchello.Query.Invoice.Search(
                 startDate,
-                endDate,
+                endDate.AddDays(1), // through end of day
                 1,
                 long.MaxValue,
                 query.SortBy,
@@ -119,16 +121,16 @@
 
             ////build list of items grouped by date. each item has "date", "salestotal", "salescount"
             var source = (from invoiceItem in invoices.Items.ToList().Cast<InvoiceDisplay>()
-                         where invoiceItem.InvoiceStatus.Name == "Paid"
+                         where invoiceItem.InvoiceStatus.Alias == "paid"
                          group invoiceItem by invoiceItem.InvoiceDate.Date
                          into g
                          orderby g.Key descending
                          select
-                             new
+                             new SalesOverTimeResult
                                  {
-                                     date = g.Key.ToString("MMMM dd, yyyy"),
-                                     salestotal = g.Sum(item => item.Total),
-                                     salescount = g.Count()
+                                     Date = g.Key.ToString("MMMM dd, yyyy"),
+                                     SalesTotal = g.Sum(item => item.Total),
+                                     SalesCount = g.Count()
                                  }).ToArray();
 
             result.Items = source;

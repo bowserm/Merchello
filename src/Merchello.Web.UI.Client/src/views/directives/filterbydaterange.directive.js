@@ -13,6 +13,7 @@
             scope: {
                 filterStartDate: '=',
                 filterEndDate: '=',
+                filterButtonText: '@filterButtonText',
                 filterWithDates: '&'
             },
             templateUrl: '/App_Plugins/Merchello/Backoffice/Merchello/directives/filterbydaterange.tpl.html',
@@ -137,6 +138,11 @@
 
                 // Initialize the controller
                 init();
+            },
+            compile: function (element, attrs) {
+                if (!attrs.filterButtonText) {
+                    attrs.filterButtonText = 'Filter';
+                }
             }
         };
     });

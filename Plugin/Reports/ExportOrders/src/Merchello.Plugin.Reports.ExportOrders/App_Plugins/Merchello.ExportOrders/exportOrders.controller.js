@@ -10,10 +10,9 @@
      */
     controllers.ExportOrdersController = function ($scope, merchelloPluginReportOrderExportService, queryDisplayBuilder) {
 
-        $scope.loaded = false;
+        $scope.loaded = true;
         $scope.preValuesLoaded = true;
 
-        $scope.exportStatus = "";
         $scope.itemsPerPage = 0;
         $scope.totalItems = 0;
         $scope.filterStartDate = '';
@@ -21,7 +20,6 @@
         $scope.currentFilters = [];
 
         // exposed methods
-        $scope.filterWithDates = filterWithDates;
         $scope.exportOrders = exportOrders;
 
         /**
@@ -34,7 +32,6 @@
          */
         function init() {
             setDefaultDates(new Date());
-            $scope.loaded = true;
         }
 
         /**
@@ -45,8 +42,16 @@
          * @description
          * Requests order data download
          */
-        function exportOrders() {
-            $scope.exportStatus = "Exporting Orders!";
+        function exportOrders(filterStartDate, filterEndDate) {
+            // prevent exporting more orders until current order is complete
+            if (loaded == false) {
+                return;
+            }
+
+            $scope.filterStartDate = filterStartDate;
+            $scope.filterEndDate = filterEndDate;
+            $scope.loaded = false;
+
             var query = buildQueryDates($scope.filterStartDate, $scope.filterEndDate);
             console.info(query);
             var promise = merchelloPluginReportOrderExportService.getOrdersByDateRange(query);
@@ -57,11 +62,9 @@
                     target: '_blank',
                     download: 'orders.csv'
                 })[0].click();
-            });
-        }
 
-        $scope.finishDownload = function () {
-            $scope.exportStatus = "";
+                $scope.loaded = true;
+            });
         }
 
         /**
@@ -83,35 +86,19 @@
                     var temp = startDate;
                     startDate = endDate;
                     endDate = temp;
-                    $scope.filterStartDate = startDate;
-                    $scope.filterEndDate = endDate;
                 }
+                $scope.filterStartDate = startDate;
+                $scope.filterEndDate = endDate;
                 query.addInvoiceDateParam($scope.filterStartDate, 'start');
                 query.addInvoiceDateParam($scope.filterEndDate, 'end');
             }
 
-            $scope.filterStartDate = startDate;
             query.currentPage = 0;
             query.itemsPerPage = 25;
             query.sortBy = 'invoiceDate';
             query.sortDirection = 'desc';
 
             return query;
-        }
-
-        /**
-         * @ngdoc method
-         * @name filterWithDates
-         * @function
-         *
-         * @description
-         * Loads a sales by item report filtered by a date range
-         */
-        function filterWithDates(filterStartDate, filterEndDate) {
-            //$scope.loaded = false;
-            var query = buildQueryDates(filterStartDate, filterEndDate);
-            //console.info(query);
-            //exportOrders();
         }
 
         /**

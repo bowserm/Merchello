@@ -1,7 +1,7 @@
 angular.module('merchello.salesreports').controller('Merchello.Plugins.SalesReports.SalesOverTimeController',
-    ['$scope', '$element', 'angularHelper', 'notificationsService', 'assetsService', 'queryDisplayBuilder', 'queryResultDisplayBuilder',
+    ['$scope', '$element', 'angularHelper', 'notificationsService', 'queryDisplayBuilder', 'queryResultDisplayBuilder',
         'salesOverTimeResultBuilder', 'salesOverTimeResource',
-    function($scope, $element, angularHelper, notificationsService, assetsService, queryDisplayBuilder, queryResultDisplayBuilder, saleOverTimeResultBuilder,
+    function($scope, $element, angularHelper, notificationsService, queryDisplayBuilder, queryResultDisplayBuilder, saleOverTimeResultBuilder,
              salesOverTimeResource) {
 
         $scope.loaded = false;
@@ -28,7 +28,6 @@ angular.module('merchello.salesreports').controller('Merchello.Plugins.SalesRepo
         function init() {
             setDefaultDates(new Date());
             defaultData();
-            $scope.loaded = true;
         }
 
         /**
